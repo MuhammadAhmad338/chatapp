@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import queryString from 'query-string';
 import io from 'socket.io-client';
-import { useLocation } from 'react-router-dom';
+import {  useLocation } from 'react-router-dom';
+import InfoBar from '../InfoBar/InfoBar';
+import Input from '../Input/Input';
 import './Chat.css';
 
 let socket;
@@ -17,40 +19,39 @@ const Chat = () => {
 
   useEffect(() => {
     const { name, room } = queryString.parse(location.search);
-    
+
     socket = io(ENDPOINT, { transports: ['websocket', 'polling', 'flashsocket'] });
     setname(name);
     setroom(room);
-    socket.emit('join', {name, room}, () => {
-
-    });
+    socket.emit('join', { name, room }, () => { });
 
     return () => {
-      socket.emit('disconnect');
+      socket.disconnect();
       socket.off();
     }
   }, [ENDPOINT, location.search]);
 
   useEffect(() => {
-      socket.on('message', (message) => {
-        setmessages([...messages, message]);
-      })     
+    socket.on('message', (message) => {
+      setmessages([...messages, message]);
+    })
   }, [messages]);
 
-  const sendMessage = () => {
-    console.log("Message has been sent!");
+  const sendMessage = (event) => {
+    event.preventDefault();
+    if (message) {
+      socket.emit('sendMessage', message, () => setmessage(""));
+    }
   }
+
+  console.log(message, messages);
 
   return (
     <div className='outerContainer'>
-       <div className='container'>
-          <input type="text" 
-          value={message} 
-          placeholder='Enter your message' 
-          onChange={(e) => setmessage(e.target.value)}
-          onKeyDown={(event) => event.key === "Enter" ? sendMessage()}
-          />
-       </div>
+      <div className='container'>
+        <InfoBar />
+        <Input message={message} setmessage={setmessage} sendMessage={sendMessage} />
+      </div>
     </div>
   );
 }
